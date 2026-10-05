@@ -20,7 +20,7 @@ app.use(express.static('public'));
 const sessionStore = new SequelizeStore({ db: sequelize });
 
 app.use(session({
-  secret: 'jobon_veterinaria_secreto_2026', // más adelante lo movemos al .env
+  secret: process.env.SESSION_SECRET,
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
@@ -50,3 +50,4 @@ sequelize.sync()
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
+
