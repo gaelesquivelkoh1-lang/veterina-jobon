@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventario de Productos</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+     <div class="topbar">
+    <h1><img src="/images/logo.png" alt="Logo" class="topbar-logo"> Inventario de Alimentos</h1>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="/accesorios" class="btn btn-secundario-nav">🧸 Accesorios</a>      <a href="/ventas" class="btn btn-editar">🛒 Punto de Venta</a>
+      <a href="/productos/nuevo" class="btn btn-nuevo">+ Agregar Producto</a>
+      <span style="color: white; font-size: 13px; margin-left: 8px;">👤 <%= usuarioActual.nombre %></span>
+      <a href="/logout" class="btn btn-secundario-nav">Salir</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Marca</th>
+            <th>Categoría</th>
+            <th>Precio/Kilo</th>
+            <th>Precio/Saco</th>
+            <th>Stock (kg)</th>
+            <th>Proveedor</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% productos.forEach(producto => { %>
+            <tr>
+              <td><strong><%= producto.nombre %></strong></td>
+              <td><%= producto.marca || '-' %></td>
+              <td><%= producto.categoria || '-' %></td>
+              <td><%= producto.precio_kilo ? '$' + producto.precio_kilo : '-' %></td>
+              <td><%= producto.precio_saco ? '$' + producto.precio_saco : '-' %></td>
+              <td>
+                <% if (producto.stock_kilos <= producto.stock_minimo) { %>
+                  <span class="badge-stock-bajo"><%= producto.stock_kilos %> kg</span>
+                <% } else { %>
+                  <span class="badge-stock-ok"><%= producto.stock_kilos %> kg</span>
+                <% } %>
+                <% if (producto.peso_saco && producto.peso_saco > 0) { %>
+                  <div style="font-size:11px; color:#999; margin-top:3px;">
+                    ≈ <%= (producto.stock_kilos / producto.peso_saco).toFixed(1) %> sacos
+                  </div>
+                <% } %>
+              </td>
+              <td><%= producto.proveedor || '-' %></td>
+              <td class="acciones">
+                <a href="/productos/<%= producto.id %>/editar" class="btn btn-editar">Editar</a>
+                <form action="/productos/<%= producto.id %>/eliminar" method="POST" onsubmit="return confirm('¿Seguro que quieres eliminar este producto?');">
+                  <button type="submit" class="btn btn-eliminar">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <% if (productos.length === 0) { %>
+        <div class="empty-state">
+          <p>No hay productos registrados todavía.</p>
+          <a href="/productos/nuevo" class="btn btn-nuevo">+ Agregar el primero</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/alertas.js"></script>
+</body>
+</html>

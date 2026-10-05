@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Iniciar Sesión - Veterinaria Jobón</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-image:
+        linear-gradient(rgba(10, 30, 20, 0.55), rgba(10, 30, 20, 0.55)),
+        url('/images/fondo-login.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    .login-box {
+      background: white;
+      padding: 40px 36px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+      animation: fadeInUp 0.4s ease-out;
+    }
+    .login-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: contain;
+      margin-bottom: 12px;
+    }
+    .login-box h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+      color: #1a1a1a;
+    }
+    .login-box .subtitulo {
+      color: #888;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+    .login-box .form-group {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .login-error {
+      background: #fdecea;
+      color: #e74c3c;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <img src="/images/logo.png" alt="Logo" class="login-logo">
+    <h1>Veterinaria Jobón</h1>
+    <p class="subtitulo">Sistema de Inventario y Ventas</p>
+
+    <% if (error) { %>
+      <div class="login-error"><%= error %></div>
+    <% } %>
+
+    <form action="/login" method="POST">
+      <div class="form-group">
+        <label>Usuario</label>
+        <input type="text" name="usuario" required autofocus>
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" name="password" required>
+      </div>
+      <button type="submit" class="btn-guardar">Iniciar Sesión</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Agregar Producto</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1><img src="/images/logo.png" alt="Logo" class="topbar-logo"> Agregar Producto</h1>
+  </div>
+
+  <div class="container">
+    <a href="/productos" class="volver">Volver al inventario</a>
+
+    <div class="form-card">
+      <form action="/productos" method="POST">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Nombre *</label>
+            <input type="text" name="nombre" required>
+          </div>
+
+          <div class="form-group">
+            <label>Marca</label>
+            <input type="text" name="marca">
+          </div>
+
+          <div class="form-group">
+            <label>Categoría</label>
+            <input type="text" name="categoria" placeholder="Perro, Gato, Ave...">
+          </div>
+
+          <div class="form-group">
+            <label>Peso por saco (kg)</label>
+            <input type="number" step="0.01" name="peso_saco">
+          </div>
+
+          <div class="form-group">
+            <label>Precio por kilo</label>
+            <input type="number" step="0.01" name="precio_kilo">
+          </div>
+
+          <div class="form-group">
+            <label>Precio por saco</label>
+            <input type="number" step="0.01" name="precio_saco">
+          </div>
+
+          <div class="form-group">
+            <label>Precio de compra</label>
+            <input type="number" step="0.01" name="precio_compra">
+          </div>
+
+          <div class="form-group">
+            <label>Sacos en existencia</label>
+            <input type="number" step="0.01" id="cantidad_sacos" placeholder="Ej. 12">
+          </div>
+
+          <div class="form-group">
+            <label>Stock actual (kg)</label>
+            <input type="number" step="0.01" name="stock_kilos" id="stock_kilos" value="0">
+            <small>Se calcula solo, o edítalo si vendes kilos sueltos</small>
+          </div>
+
+          <div class="form-group">
+            <label>Stock mínimo (kg)</label>
+            <input type="number" step="0.01" name="stock_minimo" value="0">
+          </div>
+
+          <div class="form-group">
+            <label>Proveedor</label>
+            <input type="text" name="proveedor">
+          </div>
+
+          <div class="form-group">
+            <label>Fecha de entrega</label>
+            <input type="date" name="fecha_entrega">
+          </div>
+
+          <div class="form-group">
+            <label>Fecha de recibido</label>
+            <input type="date" name="fecha_recibido">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-guardar">Guardar Producto</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const inputSacos = document.getElementById('cantidad_sacos');
+    const inputPesoSaco = document.querySelector('input[name="peso_saco"]');
+    const inputStockKilos = document.getElementById('stock_kilos');
+
+    function calcularStockDesdeSacos() {
+      const sacos = parseFloat(inputSacos.value) || 0;
+      const pesoSaco = parseFloat(inputPesoSaco.value) || 0;
+      if (sacos > 0 && pesoSaco > 0) {
+        inputStockKilos.value = (sacos * pesoSaco).toFixed(2);
+      }
+    }
+
+    inputSacos.addEventListener('input', calcularStockDesdeSacos);
+    inputPesoSaco.addEventListener('input', calcularStockDesdeSacos);
+  </script>
+</body>
+</html>

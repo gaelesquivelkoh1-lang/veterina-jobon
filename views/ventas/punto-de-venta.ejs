@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Punto de Venta</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .resumen-hoy {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .resumen-hoy-item {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+    }
+    .resumen-hoy-icono {
+      font-size: 26px;
+    }
+    .resumen-hoy-valor {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1a1a1a;
+    }
+    .resumen-hoy-etiqueta {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .pv-container {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
+      align-items: start;
+    }
+    .buscador-wrap { position: relative; }
+    #buscador {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 16px;
+      border: 1px solid #dcdfe4;
+      border-radius: 10px;
+    }
+    #buscador:focus {
+      outline: none;
+      border-color: #2c9c5c;
+      box-shadow: 0 0 0 3px rgba(44,156,92,0.15);
+    }
+    #resultados {
+      position: absolute;
+      top: 54px;
+      left: 0;
+      right: 0;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      max-height: 320px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+    .resultado-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .resultado-item:hover { background: #f7faf8; }
+    .resultado-item .info-precio { font-size: 13px; color: #777; }
+    .tag-tipo {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin-left: 6px;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+    .tag-alimento { background: #eafaf0; color: #1e8a4c; }
+    .tag-accesorio { background: #eaf2fd; color: #2266bb; }
+
+    .carrito-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 20px;
+      position: sticky;
+      top: 20px;
+    }
+    .carrito-card h2 { margin-top: 0; font-size: 18px; }
+    .carrito-item {
+      border-bottom: 1px solid #eee;
+      padding: 12px 0;
+    }
+    .carrito-item-nombre { font-weight: 600; font-size: 14px; }
+    .carrito-item-detalle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 13px;
+      color: #555;
+    }
+    .carrito-item-detalle input {
+      width: 60px;
+      padding: 4px 6px;
+      border: 1px solid #dcdfe4;
+      border-radius: 6px;
+    }
+    .btn-quitar {
+      background: none;
+      border: none;
+      color: #e74c3c;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 20px;
+      font-weight: 700;
+      margin: 16px 0;
+      padding-top: 12px;
+      border-top: 2px solid #eee;
+    }
+    .carrito-vacio { color: #999; text-align: center; padding: 20px 0; font-size: 14px; }
+    .tipo-selector {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .tipo-btn {
+      flex: 1;
+      padding: 6px;
+      border: 1px solid #dcdfe4;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .tipo-btn.activo {
+      background: #2c9c5c;
+      color: white;
+      border-color: #2c9c5c;
+    }
+
+    /* Pago y cambio */
+    .pago-wrap {
+      margin: 16px 0;
+      padding: 14px;
+      background: #f7f9fa;
+      border-radius: 10px;
+    }
+    .pago-wrap label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .pago-wrap input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #dcdfe4;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .cambio-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .cambio-row.negativo { color: #e74c3c; }
+    .cambio-row.positivo { color: #2c9c5c; }
+
+    /* Modal de confirmación */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .modal-overlay.activo {
+      display: flex;
+    }
+    .modal-box {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 36px;
+      text-align: center;
+      max-width: 360px;
+      width: 90%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.85) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+      animation: bounceIn 0.5s ease-out 0.1s backwards;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      60% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    .modal-box h2 {
+      margin: 8px 0 4px;
+      color: #1a1a1a;
+      font-size: 20px;
+    }
+    .modal-total {
+      font-size: 32px;
+      font-weight: 800;
+      color: #2c9c5c;
+      margin: 12px 0;
+    }
+    .modal-subtexto {
+      color: #888;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+    .modal-botones {
+      display: flex;
+      gap: 10px;
+    }
+    .modal-botones .btn-guardar {
+      margin-top: 0;
+    }
+    .btn-secundario {
+      background: #eee;
+      color: #444;
+    }
+    .btn-secundario:hover { background: #e2e2e2; }
+  </style>
+</head>
+<body>
+   <div class="topbar">
+    <h1><img src="/images/logo.png" alt="Logo" class="topbar-logo"> Punto de Venta</h1>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="/ventas/historial" class="btn btn-nuevo">📋 Historial</a>
+      <a href="/productos" class="btn btn-editar">📦 Ver Inventario</a>
+      <span style="color: white; font-size: 13px; margin-left: 8px;">👤 <%= usuarioActual.nombre %></span>
+      <a href="/logout" class="btn btn-secundario-nav">Salir</a>
+    </div>
+  </div>
+
+    <div class="container">
+    <div class="resumen-hoy" id="resumen-hoy">
+      <div class="resumen-hoy-item">
+        <span class="resumen-hoy-icono">🧾</span>
+        <div>
+          <div class="resumen-hoy-valor" id="resumen-ventas-count">—</div>
+          <div class="resumen-hoy-etiqueta">Ventas hoy</div>
+        </div>
+      </div>
+      <div class="resumen-hoy-item">
+        <span class="resumen-hoy-icono">💰</span>
+        <div>
+          <div class="resumen-hoy-valor" id="resumen-total-hoy">—</div>
+          <div class="resumen-hoy-etiqueta">Total vendido hoy</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pv-container">
+      <!-- Columna izquierda: buscador -->
+      <div>
+        <div class="buscador-wrap">
+          <input type="text" id="buscador" placeholder="🔍 Buscar alimento o accesorio..." autocomplete="off">
+          <div id="resultados"></div>
+        </div>
+      </div>
+
+      <!-- Columna derecha: carrito -->
+      <div class="carrito-card">
+        <h2>🛒 Venta actual</h2>
+        <div id="carrito-lista">
+          <div class="carrito-vacio">No has agregado productos todavía</div>
+        </div>
+        <div class="total-row">
+          <span>Total</span>
+          <span id="total-venta">$0.00</span>
+        </div>
+
+        <div class="pago-wrap">
+          <label>Paga con:</label>
+          <input type="number" step="0.01" min="0" id="monto-pagado" placeholder="0.00">
+          <div class="cambio-row" id="cambio-row" style="display:none;">
+            <span>Cambio:</span>
+            <span id="cambio-valor">$0.00</span>
+          </div>
+        </div>
+
+        <button class="btn-guardar" id="btn-cobrar" disabled>Confirmar Venta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmación de venta -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-icon">✅</div>
+      <h2>¡Venta registrada!</h2>
+      <p class="modal-total" id="modal-total">$0.00</p>
+      <p class="modal-subtexto">La venta se guardó correctamente y el inventario fue actualizado.</p>
+      <div class="modal-botones">
+        <button class="btn-guardar btn-secundario" id="modal-cerrar">✔️ Guardar sin imprimir</button>
+        <button class="btn-guardar" id="modal-imprimir">🖨️ Imprimir Recibo</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let carrito = []; // { tipo: 'alimento'|'accesorio', id, nombre, tipo_venta, cantidad, precio_unitario, subtotal, peso_saco, precio_kilo, precio_saco }
+    let ultimaVenta = null;
+
+    const buscador = document.getElementById('buscador');
+    const resultadosDiv = document.getElementById('resultados');
+    const carritoLista = document.getElementById('carrito-lista');
+    const totalVentaEl = document.getElementById('total-venta');
+    const btnCobrar = document.getElementById('btn-cobrar');
+    const montoPagadoInput = document.getElementById('monto-pagado');
+    const cambioRow = document.getElementById('cambio-row');
+    const cambioValor = document.getElementById('cambio-valor');
+
+    // Cargar el resumen de ventas de hoy
+    async function cargarResumenHoy() {
+      try {
+        const res = await fetch('/ventas/api/resumen-hoy');
+        const data = await res.json();
+        document.getElementById('resumen-ventas-count').textContent = data.cantidadVentas;
+        document.getElementById('resumen-total-hoy').textContent = '$' + data.totalHoy.toFixed(2);
+      } catch (error) {
+        console.error('Error al cargar resumen del día:', error);
+      }
+    }
+    cargarResumenHoy();
+
+    // Buscar mientras escribes (alimentos + accesorios)
+    let timeoutBusqueda;
+    buscador.addEventListener('input', () => {
+      clearTimeout(timeoutBusqueda);
+      const termino = buscador.value.trim();
+
+      if (termino.length === 0) {
+        resultadosDiv.style.display = 'none';
+        return;
+      }
+
+      timeoutBusqueda = setTimeout(async () => {
+        try {
+          const res = await fetch(`/productos/api/buscar-todo?q=${encodeURIComponent(termino)}`);
+          const items = await res.json();
+          mostrarResultados(items);
+        } catch (error) {
+          console.error('Error al buscar:', error);
+        }
+      }, 300);
+    });
+
+    function mostrarResultados(items) {
+      if (items.length === 0) {
+        resultadosDiv.innerHTML = '<div class="resultado-item">No se encontraron resultados</div>';
+        resultadosDiv.style.display = 'block';
+        return;
+      }
+
+      resultadosDiv.innerHTML = items.map(item => {
+        if (item.tipo === 'accesorio') {
+          return `
+            <div class="resultado-item" onclick='agregarAlCarrito(${JSON.stringify(item)})'>
+              <div>
+                <div><strong>${item.nombre}</strong><span class="tag-tipo tag-accesorio">Accesorio</span></div>
+                <div class="info-precio">Stock: ${item.stock} pza</div>
+              </div>
+              <div class="info-precio">
+                ${item.precio_venta ? '$' + item.precio_venta + '/pza' : ''}
+              </div>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="resultado-item" onclick='agregarAlCarrito(${JSON.stringify(item)})'>
+              <div>
+                <div><strong>${item.nombre}</strong><span class="tag-tipo tag-alimento">Alimento</span></div>
+                <div class="info-precio">Stock: ${item.stock_kilos} kg</div>
+              </div>
+              <div class="info-precio">
+                ${item.precio_kilo ? '$' + item.precio_kilo + '/kg' : ''}
+                ${item.precio_saco ? ' · $' + item.precio_saco + '/saco' : ''}
+              </div>
+            </div>
+          `;
+        }
+      }).join('');
+      resultadosDiv.style.display = 'block';
+    }
+
+    function agregarAlCarrito(item) {
+      if (item.tipo === 'accesorio') {
+        carrito.push({
+          tipo: 'accesorio',
+          id: item.id,
+          nombre: item.nombre,
+          tipo_venta: 'pieza',
+          cantidad: 1,
+          precio_unitario: parseFloat(item.precio_venta) || 0,
+          subtotal: parseFloat(item.precio_venta) || 0,
+        });
+      } else {
+        const tipoDefault = item.precio_kilo ? 'kilo' : 'saco';
+        const precioDefault = tipoDefault === 'kilo' ? item.precio_kilo : item.precio_saco;
+
+        carrito.push({
+          tipo: 'alimento',
+          id: item.id,
+          nombre: item.nombre,
+          peso_saco: item.peso_saco,
+          precio_kilo: item.precio_kilo,
+          precio_saco: item.precio_saco,
+          tipo_venta: tipoDefault,
+          cantidad: 1,
+          precio_unitario: parseFloat(precioDefault) || 0,
+          subtotal: parseFloat(precioDefault) || 0,
+        });
+      }
+
+      buscador.value = '';
+      resultadosDiv.style.display = 'none';
+      renderCarrito();
+    }
+
+    function cambiarTipo(index, tipo) {
+      const item = carrito[index];
+      item.tipo_venta = tipo;
+      item.precio_unitario = parseFloat(tipo === 'kilo' ? item.precio_kilo : item.precio_saco) || 0;
+      item.subtotal = item.precio_unitario * item.cantidad;
+      renderCarrito();
+    }
+
+    function cambiarCantidad(index, valor) {
+      const item = carrito[index];
+      const cantidad = item.tipo === 'accesorio'
+        ? (parseInt(valor) || 0)
+        : (parseFloat(valor) || 0);
+      item.cantidad = cantidad;
+      item.subtotal = item.precio_unitario * cantidad;
+      renderCarrito();
+    }
+
+    function quitarDelCarrito(index) {
+      carrito.splice(index, 1);
+      renderCarrito();
+    }
+
+    function getTotal() {
+      return carrito.reduce((sum, item) => sum + item.subtotal, 0);
+    }
+
+    function renderCarrito() {
+      if (carrito.length === 0) {
+        carritoLista.innerHTML = '<div class="carrito-vacio">No has agregado productos todavía</div>';
+        btnCobrar.disabled = true;
+        totalVentaEl.textContent = '$0.00';
+        actualizarCambio();
+        return;
+      }
+
+      carritoLista.innerHTML = carrito.map((item, i) => {
+        if (item.tipo === 'accesorio') {
+          return `
+            <div class="carrito-item">
+              <div class="carrito-item-nombre">${item.nombre} <span class="tag-tipo tag-accesorio">Accesorio</span></div>
+              <div class="carrito-item-detalle">
+                <span>Cant.: <input type="number" step="1" min="1" value="${item.cantidad}" onchange="cambiarCantidad(${i}, this.value)"></span>
+                <span><strong>$${item.subtotal.toFixed(2)}</strong></span>
+                <button class="btn-quitar" onclick="quitarDelCarrito(${i})">✕</button>
+              </div>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="carrito-item">
+              <div class="carrito-item-nombre">${item.nombre} <span class="tag-tipo tag-alimento">Alimento</span></div>
+              <div class="tipo-selector">
+                ${item.precio_kilo ? `<button type="button" class="tipo-btn ${item.tipo_venta === 'kilo' ? 'activo' : ''}" onclick="cambiarTipo(${i}, 'kilo')">Por Kilo</button>` : ''}
+                ${item.precio_saco ? `<button type="button" class="tipo-btn ${item.tipo_venta === 'saco' ? 'activo' : ''}" onclick="cambiarTipo(${i}, 'saco')">Por Saco</button>` : ''}
+              </div>
+              <div class="carrito-item-detalle">
+                <span>Cant.: <input type="number" step="0.01" min="0" value="${item.cantidad}" onchange="cambiarCantidad(${i}, this.value)"></span>
+                <span><strong>$${item.subtotal.toFixed(2)}</strong></span>
+                <button class="btn-quitar" onclick="quitarDelCarrito(${i})">✕</button>
+              </div>
+            </div>
+          `;
+        }
+      }).join('');
+
+      const total = getTotal();
+      totalVentaEl.textContent = '$' + total.toFixed(2);
+      btnCobrar.disabled = false;
+      actualizarCambio();
+    }
+
+    function actualizarCambio() {
+      const total = getTotal();
+      const pagado = parseFloat(montoPagadoInput.value) || 0;
+
+      if (carrito.length === 0 || montoPagadoInput.value === '') {
+        cambioRow.style.display = 'none';
+        return;
+      }
+
+      const cambio = pagado - total;
+      cambioRow.style.display = 'flex';
+      cambioValor.textContent = '$' + Math.abs(cambio).toFixed(2);
+      cambioRow.className = 'cambio-row ' + (cambio < 0 ? 'negativo' : 'positivo');
+      cambioRow.querySelector('span').textContent = cambio < 0 ? 'Falta:' : 'Cambio:';
+    }
+
+    montoPagadoInput.addEventListener('input', actualizarCambio);
+
+    // Confirmar venta
+    btnCobrar.addEventListener('click', async () => {
+      if (carrito.length === 0) return;
+
+      const total = getTotal();
+      const pagado = parseFloat(montoPagadoInput.value) || 0;
+
+      if (pagado < total) {
+        alert('El monto pagado no puede ser menor al total de la venta.');
+        return;
+      }
+
+      btnCobrar.disabled = true;
+      btnCobrar.textContent = 'Procesando...';
+
+      try {
+        const res = await fetch('/ventas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: carrito, monto_pagado: pagado }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Error al procesar la venta');
+
+        ultimaVenta = data;
+
+        document.getElementById('modal-total').textContent = '$' + data.total.toFixed(2);
+        document.getElementById('modal-overlay').classList.add('activo');
+
+        carrito = [];
+        montoPagadoInput.value = '';
+        renderCarrito();
+        cargarResumenHoy(); // actualiza el resumen después de cada venta
+      } catch (error) {
+        alert('❌ ' + error.message);
+      } finally {
+        btnCobrar.disabled = false;
+        btnCobrar.textContent = 'Confirmar Venta';
+      }
+    });
+
+    // Cerrar el modal de confirmación
+    document.getElementById('modal-cerrar').addEventListener('click', () => {
+      document.getElementById('modal-overlay').classList.remove('activo');
+    });
+
+    // Imprimir recibo
+    document.getElementById('modal-imprimir').addEventListener('click', () => {
+      if (!ultimaVenta) return;
+      abrirRecibo(ultimaVenta);
+    });
+
+    function abrirRecibo(venta) {
+      const fecha = new Date(venta.fecha).toLocaleString('es-MX', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit',
+      });
+
+      const filasProductos = venta.items.map(item => {
+        const etiquetaTipo = item.tipo_venta === 'pieza' ? 'Pieza' : (item.tipo_venta === 'kilo' ? 'Por Kilo' : 'Por Saco');
+        return `
+        <tr>
+          <td>${item.nombre}<br><span class="tipo-chip">${etiquetaTipo}</span></td>
+          <td style="text-align:center;">${item.cantidad}</td>
+          <td style="text-align:right;">$${parseFloat(item.precio_unitario).toFixed(2)}</td>
+          <td style="text-align:right;">$${parseFloat(item.subtotal).toFixed(2)}</td>
+        </tr>
+      `;
+      }).join('');
+
+      const ventanaRecibo = window.open('', 'Recibo', 'width=420,height=650');
+      ventanaRecibo.document.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <title>Recibo #${venta.ventaId}</title>
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              font-family: 'Courier New', monospace;
+              width: 320px;
+              margin: 0 auto;
+              padding: 20px 16px;
+              color: #111;
+            }
+            .logo-wrap { text-align: center; margin-bottom: 8px; }
+            .logo-wrap img { width: 90px; height: 90px; object-fit: contain; }
+            h1 { text-align: center; font-size: 18px; margin: 4px 0 0; }
+            .subtitulo { text-align: center; font-size: 12px; color: #555; margin: 2px 0 12px; }
+            .linea { border-top: 1px dashed #999; margin: 10px 0; }
+            .info-venta { font-size: 12px; margin-bottom: 10px; }
+            .info-venta div { display: flex; justify-content: space-between; margin: 2px 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { text-align: left; border-bottom: 1px solid #333; padding: 4px 2px; font-size: 11px; }
+            td { padding: 6px 2px; vertical-align: top; }
+            .tipo-chip { font-size: 10px; color: #777; }
+            .totales { margin-top: 10px; font-size: 13px; }
+            .totales div { display: flex; justify-content: space-between; margin: 3px 0; }
+            .totales .gran-total { font-size: 16px; font-weight: bold; border-top: 1px solid #333; padding-top: 6px; margin-top: 6px; }
+            .footer { text-align: center; font-size: 11px; color: #777; margin-top: 20px; }
+            @media print {
+              body { width: 100%; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="logo-wrap">
+            <img src="/images/logo.png" alt="Logo">
+          </div>
+          <h1>Veterinaria Jobón</h1>
+          <div class="subtitulo">Veterinaria y Estética</div>
+
+          <div class="linea"></div>
+
+          <div class="info-venta">
+            <div><span>Recibo #</span><span>${venta.ventaId}</span></div>
+            <div><span>Fecha</span><span>${fecha}</span></div>
+          </div>
+
+          <div class="linea"></div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th style="text-align:center;">Cant.</th>
+                <th style="text-align:right;">P.U.</th>
+                <th style="text-align:right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filasProductos}
+            </tbody>
+          </table>
+
+          <div class="linea"></div>
+
+          <div class="totales">
+            <div class="gran-total"><span>TOTAL</span><span>$${venta.total.toFixed(2)}</span></div>
+            <div><span>Pagó con</span><span>$${venta.monto_pagado.toFixed(2)}</span></div>
+            <div><span>Cambio</span><span>$${venta.cambio.toFixed(2)}</span></div>
+          </div>
+
+          <div class="footer">
+            ¡Gracias por su compra!<br>
+            Veterinaria Jobón
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          <\/script>
+        </body>
+        </html>
+      `);
+      ventanaRecibo.document.close();
+    }
+
+    // Cerrar resultados si haces clic fuera
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.buscador-wrap')) {
+        resultadosDiv.style.display = 'none';
+      }
+    });
+  </script>
+
+  <script src="/js/alertas.js"></script>
+</body>
+</html>

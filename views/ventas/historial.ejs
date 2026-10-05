@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Historial de Ventas</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .venta-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .venta-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .venta-header:hover { background: #fafafa; }
+    .venta-header-izq { display: flex; align-items: center; gap: 14px; }
+    .venta-folio {
+      background: #eafaf0;
+      color: #1e8a4c;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .venta-fecha { color: #777; font-size: 13px; }
+    .venta-vendedor {
+      background: #eaf2fd;
+      color: #2266bb;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .venta-total { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+    .venta-flecha { transition: transform 0.2s; color: #999; }
+    .venta-flecha.abierto { transform: rotate(180deg); }
+
+    .venta-detalle {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      background: #fafbfc;
+    }
+    .venta-detalle.abierto { max-height: 500px; }
+    .venta-detalle-inner { padding: 16px 20px; }
+
+    table.tabla-detalle { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.tabla-detalle th {
+      text-align: left;
+      color: #888;
+      font-weight: 600;
+      padding: 6px 8px;
+      border-bottom: 1px solid #eee;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    table.tabla-detalle td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
+
+    .resumen-pago {
+      display: flex;
+      gap: 24px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #555;
+    }
+    .resumen-pago strong { color: #1a1a1a; }
+
+    .filtro-fecha {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+      background: white;
+      padding: 14px 18px;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .filtro-fecha label { font-size: 13px; font-weight: 600; color: #555; }
+    .filtro-fecha input {
+      padding: 8px 10px;
+      border: 1px solid #dcdfe4;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .resumen-dia {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .resumen-box {
+      background: white;
+      border-radius: 10px;
+      padding: 16px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      flex: 1;
+    }
+    .resumen-box .valor { font-size: 22px; font-weight: 800; color: #2c9c5c; }
+    .resumen-box .etiqueta { font-size: 12px; color: #888; margin-top: 2px; }
+
+    /* Tarjetas de vendedores */
+    .vendedores-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .vendedor-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 22px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+      text-align: center;
+    }
+    .vendedor-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+    .vendedor-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2c9c5c, #1e6b3e);
+      color: white;
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .vendedor-nombre {
+      font-weight: 700;
+      font-size: 15px;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+    }
+    .vendedor-stats {
+      font-size: 13px;
+      color: #777;
+    }
+    .vendedor-total {
+      font-size: 20px;
+      font-weight: 800;
+      color: #2c9c5c;
+      margin-top: 8px;
+    }
+
+    /* Modal de ventas del vendedor */
+    .modal-vendedor-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px;
+      overflow-y: auto;
+    }
+    .modal-vendedor-overlay.activo { display: flex; }
+    .modal-vendedor-box {
+      background: #f0f2f5;
+      border-radius: 16px;
+      max-width: 800px;
+      width: 100%;
+      padding: 24px;
+      animation: fadeInUp 0.3s ease-out;
+    }
+    .modal-vendedor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-vendedor-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .modal-vendedor-cerrar {
+      background: white;
+      border: 1px solid #ddd;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1><img src="/images/logo.png" alt="Logo" class="topbar-logo"> <%= esAdmin ? 'Historial de Ventas (Todos)' : 'Mi Historial de Ventas' %></h1>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="/ventas" class="btn btn-nuevo">🛒 Punto de Venta</a>
+      <a href="/productos" class="btn btn-editar">📦 Inventario</a>
+      <span style="color: white; font-size: 13px; margin-left: 8px;">👤 <%= usuarioActual.nombre %></span>
+      <a href="/logout" class="btn btn-secundario-nav">Salir</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="filtro-fecha">
+      <label>📅 Filtrar por día:</label>
+      <input type="date" id="filtro-fecha-input" value="<%= fechaFiltro %>">
+      <button type="button" class="btn btn-editar" id="btn-filtrar" style="padding:8px 14px; font-size:13px;">Filtrar</button>
+      <% if (fechaFiltro) { %>
+        <a href="/ventas/historial" class="btn btn-secundario-nav" style="padding:8px 14px; font-size:13px; background:#eee; color:#444; border:1px solid #ddd;">Ver todas</a>
+      <% } %>
+    </div>
+
+    <div class="resumen-dia">
+      <div class="resumen-box">
+        <div class="valor"><%= ventas.length %></div>
+        <div class="etiqueta"><%= fechaFiltro ? 'Ventas ese día' : 'Ventas totales registradas' %></div>
+      </div>
+      <div class="resumen-box">
+        <div class="valor">$<%= ventas.reduce((sum, v) => sum + parseFloat(v.total), 0).toFixed(2) %></div>
+        <div class="etiqueta"><%= fechaFiltro ? 'Total ese día' : 'Total acumulado' %></div>
+      </div>
+    </div>
+
+    <% if (ventas.length === 0) { %>
+      <div class="empty-state" style="background:white; border-radius:12px; padding: 60px 20px;">
+        <p>No hay ventas <%= fechaFiltro ? 'en la fecha seleccionada' : 'registradas todavía' %>.</p>
+        <a href="/ventas" class="btn btn-nuevo">Ir al Punto de Venta</a>
+      </div>
+    <% } %>
+
+    <% if (esAdmin && grupos && grupos.length > 0) { %>
+      <!-- VISTA ADMIN: tarjetas por vendedor -->
+      <div class="vendedores-grid">
+        <% grupos.forEach((grupo, gIndex) => { %>
+          <div class="vendedor-card" data-index="<%= gIndex %>" onclick="abrirModalVendedor(this.dataset.index)">
+            <div class="vendedor-avatar"><%= grupo.nombre.charAt(0).toUpperCase() %></div>
+            <div class="vendedor-nombre"><%= grupo.nombre %></div>
+            <div class="vendedor-stats"><%= grupo.ventas.length %> venta<%= grupo.ventas.length !== 1 ? 's' : '' %></div>
+            <div class="vendedor-total">$<%= grupo.total.toFixed(2) %></div>
+          </div>
+        <% }) %>
+      </div>
+
+      <!-- Modales por vendedor -->
+      <% grupos.forEach((grupo, gIndex) => { %>
+        <div class="modal-vendedor-overlay" id="modal-vendedor-<%= gIndex %>">
+          <div class="modal-vendedor-box">
+            <div class="modal-vendedor-header">
+              <h2>👤 <%= grupo.nombre %> — <%= grupo.ventas.length %> venta<%= grupo.ventas.length !== 1 ? 's' : '' %> · $<%= grupo.total.toFixed(2) %></h2>
+              <button class="modal-vendedor-cerrar" data-index="<%= gIndex %>" onclick="cerrarModalVendedor(this.dataset.index)">✕</button>
+            </div>
+
+            <% grupo.ventas.forEach(venta => { %>
+              <div class="venta-card">
+                <div class="venta-header" data-venta-id="v<%= venta.id %>" onclick="toggleDetalle(this.dataset.ventaId)">
+                  <div class="venta-header-izq">
+                    <span class="venta-folio">#<%= venta.id %></span>
+                    <span class="venta-fecha">
+                      <%= new Date(venta.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                    </span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap: 14px;">
+                    <span class="venta-total">$<%= parseFloat(venta.total).toFixed(2) %></span>
+                    <span class="venta-flecha" id="flecha-v<%= venta.id %>">▼</span>
+                  </div>
+                </div>
+                <div class="venta-detalle" id="detalle-v<%= venta.id %>">
+                  <div class="venta-detalle-inner">
+                    <table class="tabla-detalle">
+                      <thead>
+                        <tr>
+                          <th>Producto</th>
+                          <th>Tipo</th>
+                          <th>Cantidad</th>
+                          <th>P. Unitario</th>
+                          <th>Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% venta.detalles.forEach(detalle => { %>
+                          <tr>
+                            <td>
+                              <% if (detalle.tipo_item === 'accesorio') { %>
+                                <%= detalle.accesorio ? detalle.accesorio.nombre : 'Accesorio eliminado' %>
+                              <% } else { %>
+                                <%= detalle.producto ? detalle.producto.nombre : 'Producto eliminado' %>
+                              <% } %>
+                            </td>
+                            <td>
+                              <% if (detalle.tipo_venta === 'pieza') { %>
+                                Por Pieza
+                              <% } else if (detalle.tipo_venta === 'kilo') { %>
+                                Por Kilo
+                              <% } else { %>
+                                Por Saco
+                              <% } %>
+                            </td>
+                            <td><%= detalle.cantidad %></td>
+                            <td>$<%= parseFloat(detalle.precio_unitario).toFixed(2) %></td>
+                            <td>$<%= parseFloat(detalle.subtotal).toFixed(2) %></td>
+                          </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                    <div class="resumen-pago">
+                      <div>Pagó con: <strong>$<%= parseFloat(venta.monto_pagado).toFixed(2) %></strong></div>
+                      <div>Cambio: <strong>$<%= parseFloat(venta.cambio).toFixed(2) %></strong></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      <% }) %>
+
+    <% } else if (!esAdmin) { %>
+      <!-- VISTA VENDEDOR: lista normal de sus propias ventas -->
+      <% ventas.forEach(venta => { %>
+        <div class="venta-card">
+          <div class="venta-header" data-venta-id="v<%= venta.id %>" onclick="toggleDetalle(this.dataset.ventaId)">
+            <div class="venta-header-izq">
+              <span class="venta-folio">#<%= venta.id %></span>
+              <span class="venta-fecha">
+                <%= new Date(venta.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+              </span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 14px;">
+              <span class="venta-total">$<%= parseFloat(venta.total).toFixed(2) %></span>
+              <span class="venta-flecha" id="flecha-v<%= venta.id %>">▼</span>
+            </div>
+          </div>
+          <div class="venta-detalle" id="detalle-v<%= venta.id %>">
+            <div class="venta-detalle-inner">
+              <table class="tabla-detalle">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>P. Unitario</th>
+                    <th>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% venta.detalles.forEach(detalle => { %>
+                    <tr>
+                      <td>
+                        <% if (detalle.tipo_item === 'accesorio') { %>
+                          <%= detalle.accesorio ? detalle.accesorio.nombre : 'Accesorio eliminado' %>
+                        <% } else { %>
+                          <%= detalle.producto ? detalle.producto.nombre : 'Producto eliminado' %>
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if (detalle.tipo_venta === 'pieza') { %>
+                          Por Pieza
+                        <% } else if (detalle.tipo_venta === 'kilo') { %>
+                          Por Kilo
+                        <% } else { %>
+                          Por Saco
+                        <% } %>
+                      </td>
+                      <td><%= detalle.cantidad %></td>
+                      <td>$<%= parseFloat(detalle.precio_unitario).toFixed(2) %></td>
+                      <td>$<%= parseFloat(detalle.subtotal).toFixed(2) %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+              <div class="resumen-pago">
+                <div>Pagó con: <strong>$<%= parseFloat(venta.monto_pagado).toFixed(2) %></strong></div>
+                <div>Cambio: <strong>$<%= parseFloat(venta.cambio).toFixed(2) %></strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <script>
+    function toggleDetalle(id) {
+      const detalle = document.getElementById('detalle-' + id);
+      const flecha = document.getElementById('flecha-' + id);
+      detalle.classList.toggle('abierto');
+      flecha.classList.toggle('abierto');
+    }
+
+    function abrirModalVendedor(index) {
+      document.getElementById('modal-vendedor-' + index).classList.add('activo');
+    }
+
+    function cerrarModalVendedor(index) {
+      document.getElementById('modal-vendedor-' + index).classList.remove('activo');
+    }
+
+    document.getElementById('btn-filtrar').addEventListener('click', () => {
+      const fecha = document.getElementById('filtro-fecha-input').value;
+      if (fecha) {
+        window.location.href = '/ventas/historial?fecha=' + fecha;
+      }
+    });
+  </script>
+
+  <script src="/js/alertas.js"></script>
+</body>
+</html>

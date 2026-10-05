@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventario de Accesorios</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1><img src="/images/logo.png" alt="Logo" class="topbar-logo"> Inventario de Accesorios</h1>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="/productos" class="btn btn-secundario-nav">🥫 Alimentos</a>
+      <a href="/ventas/historial" class="btn btn-secundario-nav">📋 Historial</a>
+      <a href="/ventas" class="btn btn-editar">🛒 Punto de Venta</a>
+      <a href="/accesorios/nuevo" class="btn btn-nuevo">+ Agregar Accesorio</a>
+      <span style="color: white; font-size: 13px; margin-left: 8px;">👤 <%= usuarioActual.nombre %></span>
+      <a href="/logout" class="btn btn-secundario-nav">Salir</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Precio Venta</th>
+            <th>Stock (piezas)</th>
+            <th>Proveedor</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% accesorios.forEach(accesorio => { %>
+            <tr>
+              <td><strong><%= accesorio.nombre %></strong></td>
+              <td><%= accesorio.categoria || '-' %></td>
+              <td><%= accesorio.precio_venta ? '$' + accesorio.precio_venta : '-' %></td>
+              <td>
+                <% if (accesorio.stock <= accesorio.stock_minimo) { %>
+                  <span class="badge-stock-bajo"><%= accesorio.stock %> pza</span>
+                <% } else { %>
+                  <span class="badge-stock-ok"><%= accesorio.stock %> pza</span>
+                <% } %>
+              </td>
+              <td><%= accesorio.proveedor || '-' %></td>
+              <td class="acciones">
+                <a href="/accesorios/<%= accesorio.id %>/editar" class="btn btn-editar">Editar</a>
+                <form action="/accesorios/<%= accesorio.id %>/eliminar" method="POST" onsubmit="return confirm('¿Seguro que quieres eliminar este accesorio?');">
+                  <button type="submit" class="btn btn-eliminar">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <% if (accesorios.length === 0) { %>
+        <div class="empty-state">
+          <p>No hay accesorios registrados todavía.</p>
+          <a href="/accesorios/nuevo" class="btn btn-nuevo">+ Agregar el primero</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/alertas.js"></script>
+</body>
+</html>
