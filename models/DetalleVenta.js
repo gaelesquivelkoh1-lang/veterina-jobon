@@ -3,7 +3,7 @@ const sequelize = require('../config/database');
 
 const DetalleVenta = sequelize.define('DetalleVenta', {
   tipo_item: {
-    type: DataTypes.ENUM('alimento', 'accesorio'),
+    type: DataTypes.ENUM('alimento', 'accesorio', 'medicamento'),
     allowNull: false,
     defaultValue: 'alimento',
   },

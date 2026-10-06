@@ -5,6 +5,7 @@ const sequelize = require('./config/database');
 const { Producto, Venta, DetalleVenta, Usuario } = require('./models/index');
 const productoRoutes = require('./routes/productoRoutes');
 const accesorioRoutes = require('./routes/accesorioRoutes');
+const medicamentoRoutes = require('./routes/medicamentoRoutes');
 const ventaRoutes = require('./routes/ventaRoutes');
 const authRoutes = require('./routes/authRoutes');
 
@@ -38,6 +39,7 @@ app.use((req, res, next) => {
 app.use('/', authRoutes);
 app.use('/productos', productoRoutes);
 app.use('/accesorios', accesorioRoutes);
+app.use('/medicamentos', medicamentoRoutes);
 app.use('/ventas', ventaRoutes);
 
 sequelize.sync()
@@ -50,4 +52,3 @@ sequelize.sync()
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
-

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Editar Medicamento</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1><img src="/images/logo.png" alt="Logo" class="topbar-logo"> Editar Medicamento</h1>
+  </div>
+
+  <div class="container">
+    <a href="/medicamentos" class="volver">Volver a medicamentos</a>
+
+    <div class="form-card">
+      <form action="/medicamentos/<%= medicamento.id %>" method="POST">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Nombre *</label>
+            <input type="text" name="nombre" value="<%= medicamento.nombre %>" required>
+          </div>
+
+          <div class="form-group full">
+            <label>Descripción</label>
+            <input type="text" name="descripcion" value="<%= medicamento.descripcion || '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>Presentación</label>
+            <input type="text" name="presentacion" value="<%= medicamento.presentacion || '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>Especie</label>
+            <input type="text" name="especie" value="<%= medicamento.especie || '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>Precio de compra</label>
+            <input type="number" step="0.01" name="precio_compra" value="<%= medicamento.precio_compra || '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>Precio de venta</label>
+            <input type="number" step="0.01" name="precio_venta" value="<%= medicamento.precio_venta || '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>Stock (piezas)</label>
+            <input type="number" step="1" name="stock" value="<%= medicamento.stock %>">
+          </div>
+
+          <div class="form-group">
+            <label>Stock mínimo (piezas)</label>
+            <input type="number" step="1" name="stock_minimo" value="<%= medicamento.stock_minimo || '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>Lote</label>
+            <input type="text" name="lote" value="<%= medicamento.lote || '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>Fecha de caducidad</label>
+            <input type="date" name="fecha_caducidad" value="<%= medicamento.fecha_caducidad || '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>Proveedor</label>
+            <input type="text" name="proveedor" value="<%= medicamento.proveedor || '' %>">
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" name="requiere_receta" <%= medicamento.requiere_receta ? 'checked' : '' %>> Requiere receta
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-guardar">Guardar Cambios</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventario de Medicamentos</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1><img src="/images/logo.png" alt="Logo" class="topbar-logo"> Inventario de Medicamentos</h1>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="/productos" class="btn btn-secundario-nav">🥫 Alimentos</a>
+      <a href="/accesorios" class="btn btn-secundario-nav">🧸 Accesorios</a>
+      <a href="/ventas/historial" class="btn btn-secundario-nav">📋 Historial</a>
+      <a href="/ventas" class="btn btn-editar">🛒 Punto de Venta</a>
+      <a href="/medicamentos" class="btn btn-secundario-nav">💊 Medicamentos</a>
+      
+      <span style="color: white; font-size: 13px; margin-left: 8px;">👤 <%= usuarioActual.nombre %></span>
+      <a href="/logout" class="btn btn-secundario-nav">Salir</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Presentación</th>
+            <th>Especie</th>
+            <th>Precio Venta</th>
+            <th>Stock (piezas)</th>
+            <th>Caducidad</th>
+            <th>Receta</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%
+            const hoy = new Date().toISOString().slice(0, 10);
+            const en30 = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+          %>
+          <% medicamentos.forEach(medicamento => { %>
+            <tr>
+              <td>
+                <strong><%= medicamento.nombre %></strong>
+                <% if (medicamento.lote) { %><br><small>Lote: <%= medicamento.lote %></small><% } %>
+              </td>
+              <td><%= medicamento.presentacion || '-' %></td>
+              <td><%= medicamento.especie || '-' %></td>
+              <td><%= medicamento.precio_venta ? '$' + medicamento.precio_venta : '-' %></td>
+              <td>
+                <% if (medicamento.stock <= medicamento.stock_minimo) { %>
+                  <span class="badge-stock-bajo"><%= medicamento.stock %> pza</span>
+                <% } else { %>
+                  <span class="badge-stock-ok"><%= medicamento.stock %> pza</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (!medicamento.fecha_caducidad) { %>
+                  -
+                <% } else if (medicamento.fecha_caducidad < hoy) { %>
+                  <span class="badge-stock-bajo"><%= medicamento.fecha_caducidad %> (Caducado)</span>
+                <% } else if (medicamento.fecha_caducidad <= en30) { %>
+                  <span class="badge-stock-bajo"><%= medicamento.fecha_caducidad %> (Por caducar)</span>
+                <% } else { %>
+                  <%= medicamento.fecha_caducidad %>
+                <% } %>
+              </td>
+              <td><%= medicamento.requiere_receta ? 'Sí' : 'No' %></td>
+              <td class="acciones">
+                <a href="/medicamentos/<%= medicamento.id %>/editar" class="btn btn-editar">Editar</a>
+                <form action="/medicamentos/<%= medicamento.id %>/eliminar" method="POST" onsubmit="return confirm('¿Seguro que quieres eliminar este medicamento?');">
+                  <button type="submit" class="btn btn-eliminar">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <% if (medicamentos.length === 0) { %>
+        <div class="empty-state">
+          <p>No hay medicamentos registrados todavía.</p>
+          <a href="/medicamentos/nuevo" class="btn btn-nuevo">+ Agregar el primero</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/alertas.js"></script>
+</body>
+</html>

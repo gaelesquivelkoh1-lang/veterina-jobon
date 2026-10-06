@@ -3,6 +3,7 @@ const Venta = require('./Venta');
 const DetalleVenta = require('./DetalleVenta');
 const Usuario = require('./Usuario');
 const Accesorio = require('./Accesorio');
+const Medicamento = require('./Medicamento');
 
 // Una venta tiene muchos detalles (productos vendidos)
 Venta.hasMany(DetalleVenta, { foreignKey: 'ventaId', as: 'detalles' });
@@ -16,8 +17,12 @@ DetalleVenta.belongsTo(Producto, { foreignKey: 'productoId', as: 'producto' });
 Accesorio.hasMany(DetalleVenta, { foreignKey: 'accesorioId' });
 DetalleVenta.belongsTo(Accesorio, { foreignKey: 'accesorioId', as: 'accesorio' });
 
+// Un medicamento puede aparecer en muchos detalles de venta
+Medicamento.hasMany(DetalleVenta, { foreignKey: 'medicamentoId' });
+DetalleVenta.belongsTo(Medicamento, { foreignKey: 'medicamentoId', as: 'medicamento' });
+
 // Un usuario puede hacer muchas ventas
 Usuario.hasMany(Venta, { foreignKey: 'usuarioId' });
 Venta.belongsTo(Usuario, { foreignKey: 'usuarioId', as: 'vendedor' });
 
-module.exports = { Producto, Venta, DetalleVenta, Usuario, Accesorio };
+module.exports = { Producto, Venta, DetalleVenta, Usuario, Accesorio, Medicamento };

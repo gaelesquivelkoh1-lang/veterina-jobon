@@ -1,4 +1,4 @@
-const { Producto, Venta, DetalleVenta, Accesorio } = require('../models/index');
+const { Producto, Venta, DetalleVenta, Accesorio, Medicamento } = require('../models/index');
 
 // Mostrar la pantalla del punto de venta
 exports.mostrarPuntoVenta = (req, res) => {
@@ -12,9 +12,10 @@ exports.crearVenta = async (req, res) => {
 
   try {
     const { items, monto_pagado } = req.body;
-    // items: [{ tipo: 'alimento'|'accesorio', productoId/accesorioId, tipo_venta, cantidad, precio_unitario, subtotal }, ...]
+    // items: [{ tipo: 'alimento'|'accesorio'|'medicamento', id, tipo_venta, cantidad, precio_unitario, subtotal }, ...]
 
     if (!items || items.length === 0) {
+      await t.rollback();
       return res.status(400).json({ error: 'El carrito está vacío' });
     }
 
@@ -23,6 +24,7 @@ exports.crearVenta = async (req, res) => {
     const cambio = pagado - total;
 
     if (cambio < 0) {
+      await t.rollback();
       return res.status(400).json({ error: 'El monto pagado es menor al total de la venta' });
     }
 
@@ -59,6 +61,35 @@ exports.crearVenta = async (req, res) => {
 
         detallesParaRecibo.push({
           nombre: accesorio.nombre,
+          tipo_venta: 'pieza',
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+          subtotal: item.subtotal,
+        });
+
+      } else if (item.tipo === 'medicamento') {
+        // ===== LÓGICA PARA MEDICAMENTOS (por pieza) =====
+        await DetalleVenta.create({
+          ventaId: venta.id,
+          medicamentoId: item.id,
+          tipo_item: 'medicamento',
+          tipo_venta: 'pieza',
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+          subtotal: item.subtotal,
+        }, { transaction: t });
+
+        const medicamento = await Medicamento.findByPk(item.id, { transaction: t });
+        const nuevoStock = medicamento.stock - parseInt(item.cantidad);
+
+        if (nuevoStock < 0) {
+          throw new Error(`Stock insuficiente para ${medicamento.nombre}`);
+        }
+
+        await medicamento.update({ stock: nuevoStock }, { transaction: t });
+
+        detallesParaRecibo.push({
+          nombre: medicamento.nombre,
           tipo_venta: 'pieza',
           cantidad: item.cantidad,
           precio_unitario: item.precio_unitario,
@@ -146,6 +177,7 @@ exports.mostrarHistorial = async (req, res) => {
           include: [
             { model: Producto, as: 'producto' },
             { model: Accesorio, as: 'accesorio' },
+            { model: Medicamento, as: 'medicamento' },
           ],
         },
         {
@@ -198,14 +230,20 @@ exports.mostrarHistorial = async (req, res) => {
 exports.resumenHoyAPI = async (req, res) => {
   try {
     const { Op } = require('sequelize');
+    const usuarioActual = req.session.usuario;
 
     const ahora = new Date();
     const inicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
     const fin = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59);
 
-    const ventasHoy = await Venta.findAll({
-      where: { fecha: { [Op.between]: [inicio, fin] } },
-    });
+    const condicion = { fecha: { [Op.between]: [inicio, fin] } };
+
+    // Los vendedores solo ven sus propias ventas; el admin ve todas
+    if (usuarioActual.rol !== 'admin') {
+      condicion.usuarioId = usuarioActual.id;
+    }
+
+    const ventasHoy = await Venta.findAll({ where: condicion });
 
     const totalHoy = ventasHoy.reduce((sum, v) => sum + parseFloat(v.total), 0);
 
