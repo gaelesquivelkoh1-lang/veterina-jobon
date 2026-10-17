@@ -6,6 +6,16 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+  <%
+    const esAdmin = usuarioActual.rol === 'admin';
+
+    // Fechas en hora local (según process.env.TZ del servidor)
+    const pad = n => String(n).padStart(2, '0');
+    const fmtLocal = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    const hoy = fmtLocal(new Date());
+    const en30 = fmtLocal(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+  %>
+
   <div class="topbar">
     <h1><img src="/images/logo.png" alt="Logo" class="topbar-logo"> Inventario de Medicamentos</h1>
     <div style="display: flex; gap: 10px; align-items: center;">
@@ -13,8 +23,7 @@
       <a href="/accesorios" class="btn btn-secundario-nav">🧸 Accesorios</a>
       <a href="/ventas/historial" class="btn btn-secundario-nav">📋 Historial</a>
       <a href="/ventas" class="btn btn-editar">🛒 Punto de Venta</a>
-      <a href="/medicamentos" class="btn btn-secundario-nav">💊 Medicamentos</a>
-      
+      <a href="/medicamentos/nuevo" class="btn btn-nuevo">+ Agregar Medicamento</a>
       <span style="color: white; font-size: 13px; margin-left: 8px;">👤 <%= usuarioActual.nombre %></span>
       <a href="/logout" class="btn btn-secundario-nav">Salir</a>
     </div>
@@ -32,14 +41,10 @@
             <th>Stock (piezas)</th>
             <th>Caducidad</th>
             <th>Receta</th>
-            <th>Acciones</th>
+            <% if (esAdmin) { %><th>Acciones</th><% } %>
           </tr>
         </thead>
         <tbody>
-          <%
-            const hoy = new Date().toISOString().slice(0, 10);
-            const en30 = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-          %>
           <% medicamentos.forEach(medicamento => { %>
             <tr>
               <td>
@@ -68,12 +73,14 @@
                 <% } %>
               </td>
               <td><%= medicamento.requiere_receta ? 'Sí' : 'No' %></td>
-              <td class="acciones">
-                <a href="/medicamentos/<%= medicamento.id %>/editar" class="btn btn-editar">Editar</a>
-                <form action="/medicamentos/<%= medicamento.id %>/eliminar" method="POST" onsubmit="return confirm('¿Seguro que quieres eliminar este medicamento?');">
-                  <button type="submit" class="btn btn-eliminar">Eliminar</button>
-                </form>
-              </td>
+              <% if (esAdmin) { %>
+                <td class="acciones">
+                  <a href="/medicamentos/<%= medicamento.id %>/editar" class="btn btn-editar">Editar</a>
+                  <form action="/medicamentos/<%= medicamento.id %>/eliminar" method="POST" onsubmit="return confirm('¿Seguro que quieres eliminar este medicamento?');">
+                    <button type="submit" class="btn btn-eliminar">Eliminar</button>
+                  </form>
+                </td>
+              <% } %>
             </tr>
           <% }) %>
         </tbody>

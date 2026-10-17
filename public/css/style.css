@@ -402,4 +402,209 @@ tbody tr:nth-child(8) { animation-delay: 0.24s; }
     width: 100%;
     justify-content: center;
   }
+  
+}
+/* ===== BARRA DE FECHA DEL HISTORIAL ===== */
+.hf-barra {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.hf-flecha {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #e3e6ea;
+  background: white;
+  font-size: 20px;
+  line-height: 1;
+  color: #2c9c5c;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.hf-flecha:hover:not(:disabled) {
+  background: #2c9c5c;
+  color: white;
+  border-color: #2c9c5c;
+}
+.hf-flecha:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.hf-selector { position: relative; }
+
+.hf-fecha-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  padding: 8px 16px 8px 14px;
+  background: white;
+  border: 1px solid #e3e6ea;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hf-fecha-btn:hover {
+  border-color: #2c9c5c;
+  box-shadow: 0 2px 8px rgba(44,156,92,0.15);
+}
+.hf-icono { font-size: 20px; }
+.hf-texto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  flex: 1;
+}
+.hf-etiqueta-hoy {
+  font-size: 11px;
+  font-weight: 800;
+  color: #2c9c5c;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.hf-fecha-texto {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.hf-fecha-texto::first-letter { text-transform: uppercase; }
+.hf-caret { color: #9aa3ab; font-size: 12px; }
+
+/* Calendario desplegable */
+.hf-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  background: white;
+  border: 1px solid #eceff1;
+  border-radius: 16px;
+  padding: 16px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+.hf-popover.abierto {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Atajos */
+.hf-acciones {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.hf-chip {
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  background: white;
+  color: #555;
+  border: 1px solid #e3e6ea;
+  transition: all 0.15s;
+}
+.hf-chip:hover { border-color: #2c9c5c; color: #2c9c5c; }
+.hf-chip.activo {
+  background: #2c9c5c;
+  color: white;
+  border-color: #2c9c5c;
+}
+
+/* ===== CALENDARIO ===== */
+.hc { width: 300px; }
+.hc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.hc-titulo {
+  font-weight: 700;
+  font-size: 15px;
+  text-transform: capitalize;
+}
+.hc-nav {
+  background: #f0f2f5;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+}
+.hc-nav:hover { background: #e2e5e9; }
+
+.hc-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.hc-nombre {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9aa3ab;
+  padding: 4px 0;
+}
+.hc-dia {
+  position: relative;
+  aspect-ratio: 1;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1a1a1a;
+  transition: background 0.15s;
+}
+.hc-dia:hover:not(:disabled):not(.seleccionado) { background: #eafaf0; }
+.hc-dia.vacio { visibility: hidden; pointer-events: none; }
+.hc-dia.futuro { color: #c3c9cf; cursor: not-allowed; }
+.hc-dia.con-ventas {
+  background: #eafaf0;
+  color: #1e6b3e;
+  font-weight: 700;
+}
+.hc-dia.hoy { box-shadow: inset 0 0 0 2px #2c9c5c; }
+.hc-dia.seleccionado {
+  background: #2c9c5c;
+  color: white;
+  font-weight: 700;
+}
+.hc-leyenda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #8a949c;
+  margin-top: 12px;
+}
+.hc-leyenda::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #cfeedd;
+}
+
+@media (max-width: 640px) {
+  .hf-fecha-btn { min-width: 0; }
+  .hf-acciones { margin-left: 0; width: 100%; }
 }

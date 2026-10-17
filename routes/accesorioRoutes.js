@@ -5,13 +5,15 @@ const { requiereLogin, requiereAdmin } = require('../middlewares/auth');
 
 router.use(requiereLogin);
 
-// Buscar accesorios (API para el punto de venta) - cualquier usuario logueado
+// ===== Cualquier usuario logueado (admin o vendedor) =====
 router.get('/api/buscar', accesorioController.buscarAccesoriosAPI);
 
-// Las siguientes rutas requieren ser admin
-router.get('/', requiereAdmin, accesorioController.listarAccesorios);
-router.get('/nuevo', requiereAdmin, accesorioController.mostrarFormularioCrear);
-router.post('/', requiereAdmin, accesorioController.crearAccesorio);
+// Ver accesorios y agregar nuevos
+router.get('/', accesorioController.listarAccesorios);
+router.get('/nuevo', accesorioController.mostrarFormularioCrear);
+router.post('/', accesorioController.crearAccesorio);
+
+// ===== Solo administrador =====
 router.get('/:id/editar', requiereAdmin, accesorioController.mostrarFormularioEditar);
 router.post('/:id', requiereAdmin, accesorioController.actualizarAccesorio);
 router.post('/:id/eliminar', requiereAdmin, accesorioController.eliminarAccesorio);

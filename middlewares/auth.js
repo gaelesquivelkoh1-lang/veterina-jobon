@@ -40,4 +40,3 @@ exports.requiereAdminOVendedor = (req, res, next) => {
 
   next();
 };
-
