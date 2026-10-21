@@ -117,10 +117,11 @@ exports.buscarProductosAPI = async (req, res) => {
   }
 };
 
-// Buscar alimentos Y accesorios juntos (para el punto de venta)
+// Buscar alimentos, accesorios Y medicamentos juntos (para el punto de venta)
 exports.buscarTodoAPI = async (req, res) => {
   try {
     const Accesorio = require('../models/Accesorio');
+    const Medicamento = require('../models/Medicamento');
     const termino = req.query.q || '';
 
     const alimentos = await Producto.findAll({
@@ -135,10 +136,29 @@ exports.buscarTodoAPI = async (req, res) => {
       order: [['nombre', 'ASC']],
     });
 
+    const medicamentos = await Medicamento.findAll({
+      where: { nombre: { [Op.like]: `%${termino}%` } },
+      limit: 8,
+      order: [['nombre', 'ASC']],
+    });
+
+    // Fecha de hoy (YYYY-MM-DD) en hora de Mérida/CDMX, para comparar con DATEONLY
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+
     // Le agregamos una etiqueta "tipo" a cada resultado para diferenciarlos en el frontend
     const resultado = [
       ...alimentos.map(a => ({ ...a.toJSON(), tipo: 'alimento' })),
       ...accesorios.map(a => ({ ...a.toJSON(), tipo: 'accesorio' })),
+      ...medicamentos.map(m => {
+        const datos = m.toJSON();
+        return {
+          ...datos,
+          tipo: 'medicamento',
+          // Sin fecha de caducidad = vigente
+          caducado: !!datos.fecha_caducidad && datos.fecha_caducidad < hoy,
+          sin_precio: datos.precio_venta === null,
+        };
+      }),
     ];
 
     res.json(resultado);

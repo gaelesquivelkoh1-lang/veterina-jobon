@@ -1,5 +1,10 @@
 const { Producto, Venta, DetalleVenta, Accesorio, Medicamento } = require('../models/index');
 
+// Fecha de hoy (YYYY-MM-DD) en hora de Mérida/CDMX, para comparar con DATEONLY
+function hoyLocal() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+}
+
 // Mostrar la pantalla del punto de venta
 exports.mostrarPuntoVenta = (req, res) => {
   res.render('ventas/punto-de-venta');
@@ -69,6 +74,29 @@ exports.crearVenta = async (req, res) => {
 
       } else if (item.tipo === 'medicamento') {
         // ===== LÓGICA PARA MEDICAMENTOS (por pieza) =====
+        // Se valida ANTES de crear el detalle, y también en el servidor
+        // (no basta con bloquearlo en la pantalla del POS).
+        const medicamento = await Medicamento.findByPk(item.id, { transaction: t });
+
+        if (!medicamento) {
+          throw new Error('El medicamento ya no existe en el inventario');
+        }
+
+        if (medicamento.precio_venta === null) {
+          throw new Error(`${medicamento.nombre} no tiene precio de venta`);
+        }
+
+        // Sin fecha de caducidad = vigente. Caduca al terminar el día indicado.
+        if (medicamento.fecha_caducidad && medicamento.fecha_caducidad < hoyLocal()) {
+          throw new Error(`${medicamento.nombre} está caducado (${medicamento.fecha_caducidad})`);
+        }
+
+        const nuevoStock = medicamento.stock - parseInt(item.cantidad);
+
+        if (nuevoStock < 0) {
+          throw new Error(`Stock insuficiente para ${medicamento.nombre}`);
+        }
+
         await DetalleVenta.create({
           ventaId: venta.id,
           medicamentoId: item.id,
@@ -78,13 +106,6 @@ exports.crearVenta = async (req, res) => {
           precio_unitario: item.precio_unitario,
           subtotal: item.subtotal,
         }, { transaction: t });
-
-        const medicamento = await Medicamento.findByPk(item.id, { transaction: t });
-        const nuevoStock = medicamento.stock - parseInt(item.cantidad);
-
-        if (nuevoStock < 0) {
-          throw new Error(`Stock insuficiente para ${medicamento.nombre}`);
-        }
 
         await medicamento.update({ stock: nuevoStock }, { transaction: t });
 
@@ -227,32 +248,70 @@ exports.mostrarHistorial = async (req, res) => {
 };
 
 // Resumen de ventas de hoy (para el Punto de Venta)
+
+/**
+ * Resumen de ventas del día actual en Mérida, Yucatán.
+ * El admin ve todas las ventas; cada vendedor ve las suyas.
+ */
 exports.resumenHoyAPI = async (req, res) => {
   try {
     const { Op } = require('sequelize');
     const usuarioActual = req.session.usuario;
 
-    const ahora = new Date();
-    const inicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
-    const fin = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59);
+    // Obtener la fecha actual de Mérida, independientemente
+    // de la zona horaria configurada en el servidor.
+    const partes = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Merida',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
 
-    const condicion = { fecha: { [Op.between]: [inicio, fin] } };
+    const obtenerParte = (tipo) =>
+      partes.find((parte) => parte.type === tipo).value;
 
-    // Los vendedores solo ven sus propias ventas; el admin ve todas
+    const fechaHoy =
+      `${obtenerParte('year')}-${obtenerParte('month')}-${obtenerParte('day')}`;
+
+    // Mérida utiliza UTC-6.
+    // Inicio de hoy y comienzo del día siguiente.
+    const inicio = new Date(`${fechaHoy}T00:00:00-06:00`);
+    const fin = new Date(inicio.getTime() + 24 * 60 * 60 * 1000);
+
+    // Incluir desde las 00:00 de hoy, pero excluir mañana.
+    const condicion = {
+      fecha: {
+        [Op.gte]: inicio,
+        [Op.lt]: fin,
+      },
+    };
+
+    // El administrador consulta todas las ventas del día.
+    // Los vendedores únicamente consultan las propias.
     if (usuarioActual.rol !== 'admin') {
       condicion.usuarioId = usuarioActual.id;
     }
 
-    const ventasHoy = await Venta.findAll({ where: condicion });
+    const ventasHoy = await Venta.findAll({
+      where: condicion,
+      attributes: ['total'],
+    });
 
-    const totalHoy = ventasHoy.reduce((sum, v) => sum + parseFloat(v.total), 0);
+    const cantidadVentas = ventasHoy.length;
+
+    const totalHoy = ventasHoy.reduce(
+      (suma, venta) => suma + (parseFloat(venta.total) || 0),
+      0
+    );
 
     res.json({
-      cantidadVentas: ventasHoy.length,
-      totalHoy: totalHoy,
+      cantidadVentas,
+      totalHoy: Number(totalHoy.toFixed(2)),
     });
   } catch (error) {
     console.error('Error al obtener resumen del día:', error);
-    res.status(500).json({ error: 'Error al obtener el resumen' });
+    res.status(500).json({
+      error: 'Error al obtener el resumen de ventas del día',
+    });
   }
 };

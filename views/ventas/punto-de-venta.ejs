@@ -76,6 +76,12 @@
     }
     .resultado-item:hover { background: #f7faf8; }
     .resultado-item .info-precio { font-size: 13px; color: #777; }
+    .resultado-item.bloqueado {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: #fafafa;
+    }
+    .resultado-item.bloqueado:hover { background: #fafafa; }
     .tag-tipo {
       display: inline-block;
       font-size: 10px;
@@ -88,6 +94,9 @@
     }
     .tag-alimento { background: #eafaf0; color: #1e8a4c; }
     .tag-accesorio { background: #eaf2fd; color: #2266bb; }
+    .tag-medicamento { background: #f3eafd; color: #7a3fb5; }
+    .tag-receta { background: #fff3e0; color: #c26a00; }
+    .tag-caducado { background: #fdecea; color: #c0392b; }
 
     .carrito-card {
       background: white;
@@ -288,7 +297,7 @@
       <!-- Columna izquierda: buscador -->
       <div>
         <div class="buscador-wrap">
-          <input type="text" id="buscador" placeholder="🔍 Buscar alimento o accesorio..." autocomplete="off">
+          <input type="text" id="buscador" placeholder="🔍 Buscar alimento, accesorio o medicamento..." autocomplete="off">
           <div id="resultados"></div>
         </div>
       </div>
@@ -333,8 +342,9 @@
   </div>
 
   <script>
-    let carrito = []; // { tipo: 'alimento'|'accesorio', id, nombre, tipo_venta, cantidad, precio_unitario, subtotal, peso_saco, precio_kilo, precio_saco }
+    let carrito = []; // { tipo: 'alimento'|'accesorio'|'medicamento', id, nombre, tipo_venta, cantidad, precio_unitario, subtotal, ... }
     let ultimaVenta = null;
+    let resultadosActuales = []; // lo último que devolvió el buscador
 
     const buscador = document.getElementById('buscador');
     const resultadosDiv = document.getElementById('resultados');
@@ -344,6 +354,20 @@
     const montoPagadoInput = document.getElementById('monto-pagado');
     const cambioRow = document.getElementById('cambio-row');
     const cambioValor = document.getElementById('cambio-valor');
+
+    // Evita que un texto con comillas o símbolos rompa el HTML
+    function esc(texto) {
+      return String(texto == null ? '' : texto).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
+    // 'YYYY-MM-DD' -> 'DD/MM/YYYY'
+    function formatearFecha(f) {
+      if (!f) return '';
+      const [y, m, d] = String(f).split('-');
+      return `${d}/${m}/${y}`;
+    }
 
     // Cargar el resumen de ventas de hoy
     async function cargarResumenHoy() {
@@ -358,7 +382,7 @@
     }
     cargarResumenHoy();
 
-    // Buscar mientras escribes (alimentos + accesorios)
+    // Buscar mientras escribes (alimentos + accesorios + medicamentos)
     let timeoutBusqueda;
     buscador.addEventListener('input', () => {
       clearTimeout(timeoutBusqueda);
@@ -381,18 +405,22 @@
     });
 
     function mostrarResultados(items) {
+      resultadosActuales = items;
+
       if (items.length === 0) {
         resultadosDiv.innerHTML = '<div class="resultado-item">No se encontraron resultados</div>';
         resultadosDiv.style.display = 'block';
         return;
       }
 
-      resultadosDiv.innerHTML = items.map(item => {
+      resultadosDiv.innerHTML = items.map((item, i) => {
+        const click = `onclick="agregarAlCarrito(resultadosActuales[${i}])"`;
+
         if (item.tipo === 'accesorio') {
           return `
-            <div class="resultado-item" onclick='agregarAlCarrito(${JSON.stringify(item)})'>
+            <div class="resultado-item" ${click}>
               <div>
-                <div><strong>${item.nombre}</strong><span class="tag-tipo tag-accesorio">Accesorio</span></div>
+                <div><strong>${esc(item.nombre)}</strong><span class="tag-tipo tag-accesorio">Accesorio</span></div>
                 <div class="info-precio">Stock: ${item.stock} pza</div>
               </div>
               <div class="info-precio">
@@ -400,11 +428,28 @@
               </div>
             </div>
           `;
+        } else if (item.tipo === 'medicamento') {
+          const sinPrecio = item.sin_precio || !(parseFloat(item.precio_venta) > 0);
+          const bloqueado = item.caducado || sinPrecio || !(item.stock > 0);
+          const detalle = [item.presentacion, item.especie].filter(Boolean).map(esc).join(' · ');
+          return `
+            <div class="resultado-item ${bloqueado ? 'bloqueado' : ''}" ${click}>
+              <div>
+                <div>
+                  <strong>${esc(item.nombre)}</strong><span class="tag-tipo tag-medicamento">Medicamento</span>${item.requiere_receta ? '<span class="tag-tipo tag-receta">Receta</span>' : ''}${item.caducado ? '<span class="tag-tipo tag-caducado">Caducado</span>' : ''}
+                </div>
+                <div class="info-precio">${detalle ? detalle + ' · ' : ''}Stock: ${item.stock} pza${item.fecha_caducidad ? ' · Cad.: ' + formatearFecha(item.fecha_caducidad) : ''}</div>
+              </div>
+              <div class="info-precio">
+                ${sinPrecio ? 'Sin precio' : '$' + item.precio_venta + '/pza'}
+              </div>
+            </div>
+          `;
         } else {
           return `
-            <div class="resultado-item" onclick='agregarAlCarrito(${JSON.stringify(item)})'>
+            <div class="resultado-item" ${click}>
               <div>
-                <div><strong>${item.nombre}</strong><span class="tag-tipo tag-alimento">Alimento</span></div>
+                <div><strong>${esc(item.nombre)}</strong><span class="tag-tipo tag-alimento">Alimento</span></div>
                 <div class="info-precio">Stock: ${item.stock_kilos} kg</div>
               </div>
               <div class="info-precio">
@@ -429,6 +474,44 @@
           precio_unitario: parseFloat(item.precio_venta) || 0,
           subtotal: parseFloat(item.precio_venta) || 0,
         });
+
+      } else if (item.tipo === 'medicamento') {
+        // Protecciones propias de los medicamentos
+        if (item.caducado) {
+          alert(`❌ "${item.nombre}" está caducado (${formatearFecha(item.fecha_caducidad)}). No se puede vender.`);
+          return;
+        }
+
+        const precio = parseFloat(item.precio_venta);
+        if (item.sin_precio || !(precio > 0)) {
+          alert(`❌ "${item.nombre}" no tiene precio de venta. Captúralo en Medicamentos antes de venderlo.`);
+          return;
+        }
+
+        if (!(item.stock > 0)) {
+          alert(`❌ "${item.nombre}" no tiene stock disponible.`);
+          return;
+        }
+
+        if (item.requiere_receta) {
+          const confirmado = confirm(
+            `⚠️ "${item.nombre}" requiere receta.\n\n¿Confirmas que el cliente presentó la receta?`
+          );
+          if (!confirmado) return;
+        }
+
+        carrito.push({
+          tipo: 'medicamento',
+          id: item.id,
+          nombre: item.nombre,
+          requiere_receta: !!item.requiere_receta,
+          stock: item.stock,
+          tipo_venta: 'pieza',
+          cantidad: 1,
+          precio_unitario: precio,
+          subtotal: precio,
+        });
+
       } else {
         const tipoDefault = item.precio_kilo ? 'kilo' : 'saco';
         const precioDefault = tipoDefault === 'kilo' ? item.precio_kilo : item.precio_saco;
@@ -462,9 +545,15 @@
 
     function cambiarCantidad(index, valor) {
       const item = carrito[index];
-      const cantidad = item.tipo === 'accesorio'
+      let cantidad = (item.tipo === 'accesorio' || item.tipo === 'medicamento')
         ? (parseInt(valor) || 0)
         : (parseFloat(valor) || 0);
+
+      if (item.tipo === 'medicamento' && cantidad > item.stock) {
+        alert(`Solo hay ${item.stock} pza de "${item.nombre}" en stock.`);
+        cantidad = item.stock;
+      }
+
       item.cantidad = cantidad;
       item.subtotal = item.precio_unitario * cantidad;
       renderCarrito();
@@ -492,9 +581,20 @@
         if (item.tipo === 'accesorio') {
           return `
             <div class="carrito-item">
-              <div class="carrito-item-nombre">${item.nombre} <span class="tag-tipo tag-accesorio">Accesorio</span></div>
+              <div class="carrito-item-nombre">${esc(item.nombre)} <span class="tag-tipo tag-accesorio">Accesorio</span></div>
               <div class="carrito-item-detalle">
                 <span>Cant.: <input type="number" step="1" min="1" value="${item.cantidad}" onchange="cambiarCantidad(${i}, this.value)"></span>
+                <span><strong>$${item.subtotal.toFixed(2)}</strong></span>
+                <button class="btn-quitar" onclick="quitarDelCarrito(${i})">✕</button>
+              </div>
+            </div>
+          `;
+        } else if (item.tipo === 'medicamento') {
+          return `
+            <div class="carrito-item">
+              <div class="carrito-item-nombre">${esc(item.nombre)} <span class="tag-tipo tag-medicamento">Medicamento</span>${item.requiere_receta ? ' <span class="tag-tipo tag-receta">Receta</span>' : ''}</div>
+              <div class="carrito-item-detalle">
+                <span>Cant.: <input type="number" step="1" min="1" max="${item.stock}" value="${item.cantidad}" onchange="cambiarCantidad(${i}, this.value)"></span>
                 <span><strong>$${item.subtotal.toFixed(2)}</strong></span>
                 <button class="btn-quitar" onclick="quitarDelCarrito(${i})">✕</button>
               </div>
@@ -503,7 +603,7 @@
         } else {
           return `
             <div class="carrito-item">
-              <div class="carrito-item-nombre">${item.nombre} <span class="tag-tipo tag-alimento">Alimento</span></div>
+              <div class="carrito-item-nombre">${esc(item.nombre)} <span class="tag-tipo tag-alimento">Alimento</span></div>
               <div class="tipo-selector">
                 ${item.precio_kilo ? `<button type="button" class="tipo-btn ${item.tipo_venta === 'kilo' ? 'activo' : ''}" onclick="cambiarTipo(${i}, 'kilo')">Por Kilo</button>` : ''}
                 ${item.precio_saco ? `<button type="button" class="tipo-btn ${item.tipo_venta === 'saco' ? 'activo' : ''}" onclick="cambiarTipo(${i}, 'saco')">Por Saco</button>` : ''}
@@ -605,7 +705,7 @@
         const etiquetaTipo = item.tipo_venta === 'pieza' ? 'Pieza' : (item.tipo_venta === 'kilo' ? 'Por Kilo' : 'Por Saco');
         return `
         <tr>
-          <td>${item.nombre}<br><span class="tipo-chip">${etiquetaTipo}</span></td>
+          <td>${esc(item.nombre)}<br><span class="tipo-chip">${etiquetaTipo}</span></td>
           <td style="text-align:center;">${item.cantidad}</td>
           <td style="text-align:right;">$${parseFloat(item.precio_unitario).toFixed(2)}</td>
           <td style="text-align:right;">$${parseFloat(item.subtotal).toFixed(2)}</td>
